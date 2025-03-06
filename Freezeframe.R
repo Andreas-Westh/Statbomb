@@ -4,6 +4,7 @@ library(ggplot2)
 library(ggsoccer)
 library(stringr)
 library(tidyr)
+library(jsonlite)
 
 df <- readRDS("Data/dkmshots.rds")
 
@@ -35,7 +36,10 @@ ggplot(dftest) +
   theme_pitch() +
   coord_flip(xlim = c(49,121)) +
   scale_y_reverse() +
-  geom_text(aes(x=location.x,y=location.y,label = player.name), size = 2.5,vjust=1)+
+  geom_text(data = df[2,], 
+          aes(x = location.x, y = location.y, label = player.name), 
+          size = 4.5, vjust = 1)
++
   geom_point(aes(x=location.x,y=location.y,color=team.name), size = 2.5)
 
 
@@ -63,7 +67,7 @@ plotSingleShotTri <- function(location) {
   return(tri_df)
 }
 
-tridf <- plotSingleShotTri(dftest$location[[1]])
+tridf <- plotSingleShotTri(df[2,]$location[[1]])
 tridf
 
 ggplot(tridf, aes(x = x, y = y)) +
@@ -76,10 +80,34 @@ ggplot(tridf, aes(x = x, y = y)) +
   theme_pitch() + 
   coord_flip(xlim = c(75,121)) +
     scale_y_reverse() + 
-  geom_text(data=dftest[1,], aes(x=location.x,y=location.y,label = player.name), size = 2.5,vjust=1)+
-  geom_point(data=dftest[1,], aes(x=location.x,y=location.y,color=team.name), size = 2.5)
+  geom_text(data=df[2,], aes(x=location.x,y=location.y,label = player.name), size = 2.5,vjust=1)+
+  geom_point(data=df[2,], aes(x=location.x,y=location.y,color=team.name), size = 2.5)
 
 testff <- df$shot.freeze_frame[[2]]
+testff <- testff %>% rowwise() %>% mutate(x=location[1])
+testff <- testff %>% rowwise() %>% mutate(y=location[2])
+testff <- jsonlite::flatten(testff)
+
+
+ggplot() +
+  annotate_pitch(
+    dimensions = pitch_statsbomb,
+    colour = "white",
+    fill = "#3ab54d"
+  ) +
+  geom_polygon(data = tridf, aes(x = x, y = y), alpha = 0.4, fill = "blue") +
+  geom_point(data = testff, aes(x = x, y = y, color = teammate), size = 2) +
+  geom_point(data = df[2,], aes(x = location.x, y = location.y), color = "black", size = 4) +
+  theme_pitch() +
+  direction_label() +
+  ggtitle("Simple passmap Taylor",
+          "ggsoccer example") +
+  coord_flip(xlim = c(75, 121)) +
+  scale_y_reverse() +
+  geom_text(data = df[2,], 
+            aes(x = location.x, y = location.y, label = player.name), 
+            size = 4.5, vjust = 1) +
+  geom_text(data = testff, aes(x = x, y = y, label = player.name), size = 2, vjust = 1, angle = 90)
 
 
   
