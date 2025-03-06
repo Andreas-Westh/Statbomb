@@ -110,4 +110,12 @@ ggplot() +
   geom_text(data = testff, aes(x = x, y = y, label = player.name), size = 2, vjust = 1, angle = 90)
 
 
+# THE MATH
+## number of opponent in the tri
+### for each opponent test wether or nor in tri
+#### compute total area of tri including the x,y of opponent
+##### if a0 > a then outside
+
+# PH og modstandere.
+is_opp
   
