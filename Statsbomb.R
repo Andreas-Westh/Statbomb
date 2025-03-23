@@ -1,6 +1,8 @@
 ## statsbombR ## 
-#devtools::install_github("statsbomb/StatsBombR")
+devtools::install_github("statsbomb/StatsBombR")
+install.packages("showtext")
 
+library(showtext)
 library(mongolite)
 library(dplyr)
 library(tidyr)
@@ -18,14 +20,14 @@ womens_statsR_matchids <- as.data.frame(Female_matches_season$match_id)
 
 womens_events <- free_allevents(MatchesDF = Female_matches_season, Parallel = T)
 
-saveRDS(womens_events, "Data/SB_womens_events.rds")
+#saveRDS(womens_events, "Data/SB_womens_events.rds")
 
 # mens events
 male_matches_season <- StatMatches %>% filter(home_team.home_team_gender == "male" & season.season_name == "2015/2016" & competition.competition_name == "Premier League")
 
 mens_events <- free_allevents(MatchesDF = male_matches_season, Parallel = T)
 
-saveRDS(mens_events, "Data/SB_mens_events,rds")
+#saveRDS(mens_events, "Data/SB_mens_events,rds")
 
 mens_events <- readRDS("Data/SB_mens_events,rds")
 
@@ -65,14 +67,20 @@ ggplot(both_conversions_long, aes(x = Category, y = Count, fill = Metric)) +
   geom_bar(stat = "identity", position = "dodge") +
   labs(title = "Mænd har flere skud og skore mindre", x = "Køn", y = "Count") +
   theme_minimal() +
-  scale_fill_manual(values = c("skyblue", "darkorange"))
+  scale_fill_manual(values = c("#00FF86", "#401152")) +
+  theme(
+    text = element_text(family = "Lato"), 
+    plot.title = element_text(hjust = 0.5))
 
 # plot over converteringsrate for begge køn
 ggplot(both_conversions, aes(x = Category, y = Conversion_Percentage, fill = Category)) +
-  geom_bar(stat = "identity", width = 0.5, alpha = 0.7) +
+  geom_bar(stat = "identity", width = 0.5, alpha = 1) +
   labs(title = "Kvinder har en højere konverteringsrate på skud", x = "Køn", y = "Konverteringsprocent") +
   theme_minimal() +
-  scale_fill_manual(values = c("blue", "red"))
+  scale_fill_manual(values = c("#00FF86", "#401152"))+
+  theme(
+    text = element_text(family = "Lato"), 
+    plot.title = element_text(hjust = 0.5))
 
 # kort
 
@@ -101,7 +109,10 @@ ggplot(cards_combined, aes(x = Card_Type, y = Count, fill = Category)) +
        x = "Card Type",
        y = "Number of Cards") +
   theme_minimal() +
-  scale_fill_manual(values = c("blue", "red")) 
+  scale_fill_manual(values = c("#00FF86", "#401152")) +
+  theme(
+    text = element_text(family = "Lato"), 
+    plot.title = element_text(hjust = 0.5))
 
 # aflevringer
 
@@ -142,10 +153,87 @@ womens_pass_acc$Category <- "Women"
 pass_acc_combined <- rbind(mens_pass_acc, womens_pass_acc)
 
 #plot
-ggplot(pass_acc_combined, aes(x = Var1, y = Percentage, fill = Category)) +
-  geom_bar(stat = "identity", position = "dodge") +  # Side-by-side bars
-  labs(title = "Pass Accuracy vs. Incompletion by Gender",
-       x = "Pass Type",
+pass_acc_combined$Var1 <- factor(pass_acc_combined$Var1, levels = c("Accurate", "Incomplete"))
+
+# Afleverings procent Plot
+ggplot(pass_acc_combined, aes(x = Category, y = Percentage, fill = Var1)) +
+  geom_bar(stat = "identity", position = "stack", width = 0.5) +  # Stack bars
+  geom_text(aes(label = paste0(round(Percentage, 1), "%")), 
+            position = position_stack(vjust = 0.5), size = 5, color = "white") +  # Tilføjer procenter
+  labs(title = "Mænds afleveringer er mere præcise",
+       x = "Category",
        y = "Percentage (%)") +
   theme_minimal() +
-  scale_fill_manual(values = c("blue", "red"))
+  scale_fill_manual(values = c("#401152", "#00FF86")) +
+  theme(
+    text = element_text(family = "Lato"), 
+    plot.title = element_text(hjust = 0.5)
+  )
+
+# gennemsnit afleveringer pr. kamp
+
+#men
+passes_per_match <- mens_passes %>%
+  group_by(match_id) %>%
+  summarise(total_passes = n()) 
+
+average_passes_per_match <- mean(passes_per_match$total_passes)
+
+#women
+passes_per_match_women <- womens_passes %>%
+  group_by(match_id) %>%
+  summarise(total_passes = n()) 
+
+avg_womens_passes_pr_match <- mean(passes_per_match_women$total_passes)
+
+avg_passes_combined <- data.frame(
+  Category = c("Mænd", "Kvinder"),
+  Avg_Passes_Per_Match = c(average_passes_per_match, avg_womens_passes_pr_match)
+)
+
+#plot over gennemsnitlige aflevereing pr. kamp 
+ggplot(avg_passes_combined, aes(x = Category, y = Avg_Passes_Per_Match, fill = Category)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  labs(title = "Gennemsnitlige afleveringer pr. kamp (Mænd vs. Kvinder)",
+       x = "Category",
+       y = "Average Passes") +
+  theme_minimal() +
+  scale_fill_manual(values = c("#00FF86", "#401152")) +
+  theme(
+    text = element_text(family = "Lato"), 
+    plot.title = element_text(hjust = 0.5))
+
+# eksperiment
+
+games_131 <- mens_events %>%
+  filter(match_id %in% selected_games)
+
+foul <- games_131 %>% filter(type.name == "Foul Committed")
+
+foul_women <- womens_events %>% filter(type.name == "Foul Committed")
+
+foul_men_count <- foul %>% summarise(Count = n())
+
+foul_women_count <- foul_women %>% summarise(Count = n())
+
+foul_data <- data.frame(
+  Category = c("Mænd", "Kvinder"),
+  Fouls_Committed = c(foul_men_count$Count, foul_women_count$Count))
+
+font_add_google("Lato")
+showtext_auto()
+
+#frispark begåede
+ggplot(foul_data, aes(x = Category, y = Fouls_Committed, fill = Category)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  labs(title = "Frispark begåede af kvinder og mænd",
+       x = "Category",
+       y = "Number of Fouls") +
+  theme_minimal() +
+  scale_fill_manual(values = c("#00FF86", "#401152")) +
+  theme(
+    text = element_text(family = "Lato"), 
+    plot.title = element_text(hjust = 0.5))
+
+corner_fouls <- foul %>% filter(play_pattern.name == "From Corner")
+
