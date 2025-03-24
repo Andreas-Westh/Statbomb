@@ -10,8 +10,6 @@ library(here)
 font_add_google("Lato")
 showtext_auto()
 
-mens_events <- read.csv("Mens_english_events.rds")
-womens_events <- read.csv("SB_womens_events.rds")
 
 ui <- fluidPage(
   titlePanel("StatsBomb Analyse - Kvinder vs. Mænd"),
@@ -65,6 +63,19 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
+  mens_events <- readRDS("mens_events_min.rds")
+  womens_events <- readRDS("SB_womens_events.rds")
+  selected_games <- head(unique(mens_events$match_id), 131)
+  
+  both_conversions_long <- readRDS("both_conversions_long.rds")
+  both_conversions <- readRDS("both_conversions.rds")
+  pass_acc_combined <- readRDS("pass_acc_combined.rds")
+  cards_combined <- readRDS("cards_combined.rds")
+  avg_passes_combined <- readRDS("avg_passes_combined.rds")
+  foul_data <- readRDS("foul_data.rds")
+  evt_count <- readRDS("evt_count.rds")
+  injuries <- readRDS("injuries.rds")
+  
   
   # Skud tab output
   output$plot_skud <- renderPlot({
